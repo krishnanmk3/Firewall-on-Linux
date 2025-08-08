@@ -24,7 +24,7 @@ Option 1: Use telnet or nc (Local Test)
 bash
 telnet localhost 23      # Should fail with "Connection refused"
 nc -zv localhost 23      # Should say "Connection refused"
-❌ If it succeeds:
+If it succeeds:
 * UFW isn’t blocking the port.
 * Check if another service (like iptables) is interfering:
 * bash
