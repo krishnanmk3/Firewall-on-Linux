@@ -1,0 +1,87 @@
+﻿Step 1: Check if UFW is Installed
+bash
+sudo apt update && sudo apt install ufw -y  # Install UFW if missing
+* Debian/Ubuntu: Pre-installed in most cases.
+* Other distros (Arch, Fedora, etc.): May require manual installation.
+ Open Firewall & Verify UFW is Active
+bash
+sudo ufw enable         # Enable firewall
+sudo ufw status         # Must show "Status: active"
+
+
+Step 2:List Current Rules (Check Conflicts)
+bash
+sudo ufw status verbose
+sudo iptables -L -n -v  # Check raw iptables rules (UFW is a frontend for iptables)
+
+
+Step 3: Re-add the Block Rule (Port 23/TCP)
+bash
+sudo ufw deny 23/tcp    # Block Telnet
+sudo ufw reload         # Apply changes
+Step 4:Test the Rule Properly
+Option 1: Use telnet or nc (Local Test)
+bash
+telnet localhost 23      # Should fail with "Connection refused"
+nc -zv localhost 23      # Should say "Connection refused"
+❌ If it succeeds:
+* UFW isn’t blocking the port.
+* Check if another service (like iptables) is interfering:
+* bash
+* sudo iptables -L | grep 23
+Option 2: Metasploit Test (Remote Attack Simulation)
+bash
+msfconsole
+use auxiliary/scanner/telnet/telnet_version
+set RHOSTS <your_local_IP>  # e.g., 192.168.1.100
+run
+🔹 Expected Result:
+* If the firewall works, Metasploit should report "Connection failed".
+* If it still connects, the firewall rule isn’t applied correctly.
+
+
+Step 5 : Allow SSH (Port 22) - If Needed
+bash
+sudo ufw allow 22/tcp    # Allow SSH
+sudo ufw reload
+🔹 Verify SSH Works:
+bash
+ssh localhost            # Should connect if SSH server is running
+
+
+Step 6: Remove Test Rule (Port 23 Block)
+bash
+sudo ufw status numbered  # Find rule number for port 23
+sudo ufw delete [rule_number]  # e.g., sudo ufw delete 2
+🔹 Verify Removal:
+bash
+sudo ufw status | grep 23  # Should show no rules for port 23
+
+
+
+
+Step 7: Document All Commands (For Review)
+UFW Commands Used
+bash
+sudo ufw enable
+sudo ufw status verbose
+sudo ufw deny 23/tcp
+telnet localhost 23       # Test (should fail)
+sudo ufw allow 22/tcp     # Allow SSH
+sudo ufw delete deny 23/tcp  # Remove test rule
+Metasploit Test
+bash
+msfconsole
+use auxiliary/scanner/telnet/telnet_version
+set RHOSTS <your_IP>
+run
+Step 8: Summarize How Firewall Filters Traffic
+* Rules-Based Filtering: Blocks/allows traffic by port, IP, protocol (TCP/UDP).
+* Stateful Inspection: Tracks active connections (e.g., allows reply traffic).
+* Default Policy: Usually "deny all" unless explicitly allowed.
+* Logging: Can log allowed/blocked traffic for auditing.
+Example Traffic Flow
+1. Packet arrives → Firewall checks source/destination IP & port.
+2. Matches against rules (top-to-bottom).
+3. If no match, applies default policy (block).
+4. Logs the action if logging is enabled.
